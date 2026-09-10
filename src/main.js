@@ -2,6 +2,8 @@ import JSZip from 'jszip';
 import { H5P } from 'h5p-standalone';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
+import frameJsAsset from 'h5p-standalone/dist/frame.bundle.js?url';
+import frameCssAsset from 'h5p-standalone/dist/styles/h5p.css?url';
 import frameJsSource from 'h5p-standalone/dist/frame.bundle.js?raw';
 import frameCssSource from 'h5p-standalone/dist/styles/h5p.css?raw';
 import coreFontUrl from 'h5p-standalone/dist/fonts/h5p-core-30.woff2?url';
@@ -54,10 +56,7 @@ function showCliLoading(path) {
 
 async function openPath(path) {
   const root = await invoke('serve_h5p', { path });
-  const frameJsUrl = URL.createObjectURL(new Blob([frameJsSource], { type: 'text/javascript' }));
-  const frameCssUrl = URL.createObjectURL(new Blob([rewriteCssUrls(frameCssSource, 'styles/h5p.css', new Map(), coreFontUrl)], { type: 'text/css' }));
-  await new H5P(container, { h5pJsonPath: root, contentJsonPath: `${root}/content`, librariesPath: root, embedType: 'div', frame: true, fullScreen: true, frameJs: frameJsUrl, frameCss: frameCssUrl });
-  window.addEventListener('pagehide', () => { URL.revokeObjectURL(frameJsUrl); URL.revokeObjectURL(frameCssUrl); }, { once: true });
+  await new H5P(container, { h5pJsonPath: root, contentJsonPath: `${root}/content`, librariesPath: root, embedType: 'div', frame: true, fullScreen: true, frameJs: frameJsAsset, frameCss: frameCssAsset });
 }
 
 async function openFile(file) {
