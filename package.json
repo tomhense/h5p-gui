@@ -11,6 +11,7 @@
     "tauri:build": "tauri build"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
     "h5p-standalone": "^3.8.2",
     "jszip": "^3.10.1"
   },

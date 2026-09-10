@@ -18,7 +18,13 @@ Use the release executable:
 ./src-tauri/target/release/h5p-desk
 ```
 
-Then select an `.h5p` file in the application. Command-line file arguments are not currently used.
+You can also open a package directly by passing its path:
+
+```bash
+./src-tauri/target/release/h5p-desk /path/to/activity.h5p
+```
+
+The file is read through Tauri's local asset protocol and is not uploaded.
 
 ## Development
 
