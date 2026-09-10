@@ -30,16 +30,19 @@ fn serve_h5p(path: String) -> Result<String, String> {
     let listener = TcpListener::bind("0.0.0.0:0").map_err(|e| e.to_string())?;
     let port = listener.local_addr().map_err(|e| e.to_string())?.port();
     let stopping = Arc::new(std::sync::atomic::AtomicBool::new(false));
-    let thread_stopping = stopping.clone();
-    let thread_root = root.clone();
-    thread::spawn(move || {
-        for stream in listener.incoming() {
-            if thread_stopping.load(std::sync::atomic::Ordering::Relaxed) { break; }
-            if let Ok(stream) = stream { serve_request(stream, &thread_root); }
-        }
-    });
+    spawn_listener(listener, stopping.clone(), root.clone());
+    if let Ok(listener_v6) = TcpListener::bind(format!("[::1]:{port}")) { spawn_listener(listener_v6, stopping.clone(), root.clone()); }
     *ARCHIVE_SERVER.lock().unwrap() = Some((stopping, root));
     Ok(format!("http://127.0.0.1:{port}"))
+}
+
+fn spawn_listener(listener: TcpListener, stopping: Arc<std::sync::atomic::AtomicBool>, root: PathBuf) {
+    thread::spawn(move || {
+        for stream in listener.incoming() {
+            if stopping.load(std::sync::atomic::Ordering::Relaxed) { break; }
+            if let Ok(stream) = stream { serve_request(stream, &root); }
+        }
+    });
 }
 
 fn stop_archive_server() {
