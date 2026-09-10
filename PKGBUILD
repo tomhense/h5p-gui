@@ -1,13 +1,13 @@
 pkgname=h5p-desk
 pkgver=0.1.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Offline desktop player for H5P packages'
 arch=('x86_64')
 url='https://github.com/tomhense/h5p-gui'
 license=('custom')
 depends=('webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator')
 makedepends=('git' 'nodejs' 'npm' 'rust')
-source=("git+$url.git")
+source=("git+$url.git#branch=master")
 sha256sums=('SKIP')
 
 pkgver() {
