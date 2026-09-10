@@ -97,6 +97,12 @@ fn mime_type(path: &Path) -> &'static str { match path.extension().and_then(|e| 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(target_os = "linux")]
+    if std::env::var_os("WAYLAND_DISPLAY").is_some() && std::env::var_os("GDK_BACKEND").is_none() {
+        // GTK otherwise prefers X11 when both DISPLAY and WAYLAND_DISPLAY are
+        // present, which makes Tauri run through XWayland.
+        std::env::set_var("GDK_BACKEND", "wayland");
+    }
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![cli_file_path, serve_h5p])
