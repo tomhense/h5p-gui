@@ -56,6 +56,7 @@ function showCliLoading(path) {
 
 async function openPath(path) {
   const root = await invoke('serve_h5p', { path });
+  container.replaceChildren();
   await new H5P(container, { h5pJsonPath: root, contentJsonPath: `${root}/content`, librariesPath: root, embedType: 'div', frame: true, fullScreen: true, frameJs: frameJsAsset, frameCss: frameCssAsset });
 }
 

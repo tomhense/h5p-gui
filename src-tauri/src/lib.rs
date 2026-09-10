@@ -61,7 +61,8 @@ fn serve_request(mut stream: TcpStream, root: &Path) {
     let mut parts = first.split_whitespace();
     let method = parts.next();
     if method == Some("OPTIONS") { write_response(&mut stream, "204 No Content", "text/plain", &[]); return; }
-    if method != Some("GET") { return }
+    if method != Some("GET") && method != Some("HEAD") { return }
+    let send_body = method == Some("GET");
     let Some(url) = parts.next() else { return };
     let relative = url.split('?').next().unwrap_or("/").trim_start_matches('/');
     let relative = percent_decode(relative);
@@ -69,18 +70,28 @@ fn serve_request(mut stream: TcpStream, root: &Path) {
     if !path.starts_with(root) { return }
     let Ok(mut file) = File::open(&path) else { write_response(&mut stream, "404 Not Found", "text/plain", &[]); return };
     let Ok(length) = file.metadata().map(|m| m.len()) else { return };
-    let range = lines.find_map(|line| line.strip_prefix("Range: bytes=").and_then(|v| v.strip_suffix('\r').or(Some(v))).and_then(parse_range));
-    let (start, end, status) = range.map(|(s, e)| (s, e.min(length.saturating_sub(1)), "206 Partial Content")).unwrap_or((0, length.saturating_sub(1), "200 OK"));
+    let range = lines.find_map(|line| line.strip_prefix("Range: bytes=").and_then(|v| v.strip_suffix('\r').or(Some(v))).and_then(|v| parse_range(v, length)));
+    let (start, end, status) = range.map(|(s, e)| (s, e, "206 Partial Content")).unwrap_or((0, length.saturating_sub(1), "200 OK"));
     if start >= length { write_response(&mut stream, "416 Range Not Satisfiable", "text/plain", &[]); return }
     let _ = file.seek(SeekFrom::Start(start));
     let mut body = vec![0; (end - start + 1) as usize];
-    if file.read_exact(&mut body).is_err() { return }
+    if send_body && file.read_exact(&mut body).is_err() { return }
     let mime = mime_type(&path);
     let headers = format!("HTTP/1.1 {status}\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nAccept-Ranges: bytes\r\nContent-Range: bytes {start}-{end}/{length}\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: GET, OPTIONS\r\nAccess-Control-Allow-Headers: Range\r\nConnection: close\r\n\r\n", body.len());
-    let _ = stream.write_all(headers.as_bytes()); let _ = stream.write_all(&body);
+    let _ = stream.write_all(headers.as_bytes()); if send_body { let _ = stream.write_all(&body); }
 }
 fn write_response(stream: &mut TcpStream, status: &str, mime: &str, body: &[u8]) { let h = format!("HTTP/1.1 {status}\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: GET, OPTIONS\r\nAccess-Control-Allow-Headers: Range\r\nConnection: close\r\n\r\n", body.len()); let _ = stream.write_all(h.as_bytes()); let _ = stream.write_all(body); }
-fn parse_range(value: &str) -> Option<(u64, u64)> { let mut p = value.split('-'); Some((p.next()?.parse().ok()?, p.next()?.parse().ok()?)) }
+fn parse_range(value: &str, length: u64) -> Option<(u64, u64)> {
+    let mut parts = value.split('-');
+    let start = parts.next()?.parse::<u64>().ok();
+    let end: Option<u64> = parts.next().and_then(|part| if part.is_empty() { None } else { part.parse().ok() });
+    match (start, end) {
+        (Some(start), Some(end)) if start <= end && start < length => Some((start, end.min(length - 1))),
+        (Some(start), None) if start < length => Some((start, length - 1)),
+        (None, Some(size)) if size > 0 => Some((length.saturating_sub(size), length - 1)),
+        _ => None
+    }
+}
 fn percent_decode(value: &str) -> String { value.replace("%20", " ").replace("%2F", "/").replace("%5C", "\\") }
 fn mime_type(path: &Path) -> &'static str { match path.extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase().as_str() { "mp4" => "video/mp4", "webm" => "video/webm", "mp3" => "audio/mpeg", "wav" => "audio/wav", "json" => "application/json", "js" => "text/javascript", "css" => "text/css", "png" => "image/png", "jpg" | "jpeg" => "image/jpeg", "svg" => "image/svg+xml", _ => "application/octet-stream" } }
 
