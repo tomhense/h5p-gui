@@ -56,7 +56,9 @@ fn serve_request(mut stream: TcpStream, root: &Path) {
     let mut lines = request.lines();
     let Some(first) = lines.next() else { return };
     let mut parts = first.split_whitespace();
-    if parts.next() != Some("GET") { return }
+    let method = parts.next();
+    if method == Some("OPTIONS") { write_response(&mut stream, "204 No Content", "text/plain", &[]); return; }
+    if method != Some("GET") { return }
     let Some(url) = parts.next() else { return };
     let relative = url.split('?').next().unwrap_or("/").trim_start_matches('/');
     let relative = percent_decode(relative);
@@ -71,10 +73,10 @@ fn serve_request(mut stream: TcpStream, root: &Path) {
     let mut body = vec![0; (end - start + 1) as usize];
     if file.read_exact(&mut body).is_err() { return }
     let mime = mime_type(&path);
-    let headers = format!("HTTP/1.1 {status}\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nAccept-Ranges: bytes\r\nContent-Range: bytes {start}-{end}/{length}\r\nConnection: close\r\n\r\n", body.len());
+    let headers = format!("HTTP/1.1 {status}\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nAccept-Ranges: bytes\r\nContent-Range: bytes {start}-{end}/{length}\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: GET, OPTIONS\r\nAccess-Control-Allow-Headers: Range\r\nConnection: close\r\n\r\n", body.len());
     let _ = stream.write_all(headers.as_bytes()); let _ = stream.write_all(&body);
 }
-fn write_response(stream: &mut TcpStream, status: &str, mime: &str, body: &[u8]) { let h = format!("HTTP/1.1 {status}\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", body.len()); let _ = stream.write_all(h.as_bytes()); let _ = stream.write_all(body); }
+fn write_response(stream: &mut TcpStream, status: &str, mime: &str, body: &[u8]) { let h = format!("HTTP/1.1 {status}\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: GET, OPTIONS\r\nAccess-Control-Allow-Headers: Range\r\nConnection: close\r\n\r\n", body.len()); let _ = stream.write_all(h.as_bytes()); let _ = stream.write_all(body); }
 fn parse_range(value: &str) -> Option<(u64, u64)> { let mut p = value.split('-'); Some((p.next()?.parse().ok()?, p.next()?.parse().ok()?)) }
 fn percent_decode(value: &str) -> String { value.replace("%20", " ").replace("%2F", "/").replace("%5C", "\\") }
 fn mime_type(path: &Path) -> &'static str { match path.extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase().as_str() { "mp4" => "video/mp4", "webm" => "video/webm", "mp3" => "audio/mpeg", "wav" => "audio/wav", "json" => "application/json", "js" => "text/javascript", "css" => "text/css", "png" => "image/png", "jpg" | "jpeg" => "image/jpeg", "svg" => "image/svg+xml", _ => "application/octet-stream" } }
