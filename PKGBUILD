@@ -12,7 +12,13 @@ sha256sums=('SKIP')
 
 pkgver() {
   cd "$srcdir/h5p-gui"
-  git describe --long --tags --match 'v*' 2>/dev/null | sed -E 's/^v//; s/([^-]+)-([0-9]+)-g.*/\1.r\2/' || echo 0.1.0.r$(git rev-list --count HEAD)
+  local version
+  version=$(git describe --long --tags --match 'v*' 2>/dev/null || true)
+  if [[ -n "$version" ]]; then
+    printf '%s\n' "$version" | sed -E 's/^v//; s/([^-]+)-([0-9]+)-g.*/\1.r\2/'
+  else
+    printf '0.1.0.r%s\n' "$(git rev-list --count HEAD)"
+  fi
 }
 
 build() {
