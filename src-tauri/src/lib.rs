@@ -102,6 +102,9 @@ pub fn run() {
         // GTK otherwise prefers X11 when both DISPLAY and WAYLAND_DISPLAY are
         // present, which makes Tauri run through XWayland.
         std::env::set_var("GDK_BACKEND", "wayland");
+        // Ask GTK to use compositor/server-side decorations where the
+        // Wayland compositor supports them (for example KDE Plasma).
+        std::env::set_var("GTK_CSD", "0");
     }
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
