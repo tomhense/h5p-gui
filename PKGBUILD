@@ -7,7 +7,7 @@ url='https://github.com/tomhense/h5p-gui'
 license=('custom')
 depends=('webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator')
 makedepends=('git' 'nodejs' 'npm' 'rust')
-source=("git+$url.git#branch=master")
+source=("git+$url.git")
 sha256sums=('SKIP')
 
 pkgver() {
@@ -25,8 +25,7 @@ build() {
   cd "$srcdir/h5p-gui"
 
   npm ci
-  npm run build
-  cargo build --release --locked --manifest-path src-tauri/Cargo.toml
+  npm run tauri:build -- --no-bundle
 }
 
 package() {
