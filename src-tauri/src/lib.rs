@@ -27,7 +27,7 @@ fn serve_h5p(path: String) -> Result<String, String> {
         let mut output = File::create(target).map_err(|e| e.to_string())?;
         std::io::copy(&mut entry, &mut output).map_err(|e| e.to_string())?;
     }
-    let listener = TcpListener::bind("127.0.0.1:0").map_err(|e| e.to_string())?;
+    let listener = TcpListener::bind("0.0.0.0:0").map_err(|e| e.to_string())?;
     let port = listener.local_addr().map_err(|e| e.to_string())?.port();
     let stopping = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let thread_stopping = stopping.clone();
