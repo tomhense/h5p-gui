@@ -84,6 +84,9 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![cli_file_path, serve_h5p])
-        .run(tauri::generate_context!())
-        .expect("error while running H5P Desk");
+        .build(tauri::generate_context!())
+        .expect("error while building H5P Desk")
+        .run(|_, event| {
+            if matches!(event, tauri::RunEvent::Exit) { stop_archive_server(); }
+        });
 }
