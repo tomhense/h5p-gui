@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-dialog": "^2.7.3",
     "h5p-standalone": "^3.8.2",
     "jszip": "^3.10.1"
   },

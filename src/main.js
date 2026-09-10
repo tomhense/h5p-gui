@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import { H5P } from 'h5p-standalone';
-import { convertFileSrc, invoke } from '@tauri-apps/api/core';
+import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-dialog';
 import frameJsSource from 'h5p-standalone/dist/frame.bundle.js?raw';
 import frameCssSource from 'h5p-standalone/dist/styles/h5p.css?raw';
 import coreFontUrl from 'h5p-standalone/dist/fonts/h5p-core-30.woff2?url';
@@ -19,7 +20,12 @@ let restoreArchiveFetch = null;
 let archiveUrls = null;
 let archiveFontStyle = null;
 
-document.querySelector('#open-button').addEventListener('click', () => input.click());
+document.querySelector('#open-button').addEventListener('click', async () => {
+  const path = await open({ multiple: false, filters: [{ name: 'H5P package', extensions: ['h5p'] }] });
+  if (typeof path !== 'string') return;
+  showCliLoading(path);
+  openPath(path).catch(showOpenError);
+});
 document.querySelector('#back-button').addEventListener('click', () => { container.replaceChildren(); playerView.classList.add('hidden'); welcome.classList.remove('hidden'); });
 ['dragenter', 'dragover'].forEach((event) => document.addEventListener(event, (e) => { e.preventDefault(); document.body.classList.add('dragging'); }));
 ['dragleave', 'drop'].forEach((event) => document.addEventListener(event, (e) => { e.preventDefault(); document.body.classList.remove('dragging'); }));
@@ -30,9 +36,13 @@ invoke('cli_file_path').then((path) => {
   showCliLoading(path);
   return openPath(path);
 }).catch((error) => {
+  showOpenError(error);
+});
+
+function showOpenError(error) {
   container.innerHTML = `<div class="error"><strong>Could not open this file</strong><p>${escapeHtml(error.message)}</p></div>`;
   status('Open failed');
-});
+}
 
 function showCliLoading(path) {
   welcome.classList.add('hidden');
@@ -43,10 +53,11 @@ function showCliLoading(path) {
 }
 
 async function openPath(path) {
-  const response = await fetch(convertFileSrc(path, 'asset'));
-  if (!response.ok) throw new Error(`Could not read ${path} (${response.status})`);
-  const name = path.split(/[\\/]/).pop() || 'content.h5p';
-  openFile(new File([await response.arrayBuffer()], name, { type: 'application/zip' }));
+  const root = await invoke('serve_h5p', { path });
+  const frameJsUrl = URL.createObjectURL(new Blob([frameJsSource], { type: 'text/javascript' }));
+  const frameCssUrl = URL.createObjectURL(new Blob([rewriteCssUrls(frameCssSource, 'styles/h5p.css', new Map(), coreFontUrl)], { type: 'text/css' }));
+  await new H5P(container, { h5pJsonPath: root, contentJsonPath: `${root}/content`, librariesPath: root, embedType: 'div', frame: true, fullScreen: true, frameJs: frameJsUrl, frameCss: frameCssUrl });
+  window.addEventListener('pagehide', () => { URL.revokeObjectURL(frameJsUrl); URL.revokeObjectURL(frameCssUrl); }, { once: true });
 }
 
 async function openFile(file) {
