@@ -4,7 +4,7 @@ pkgrel=2
 pkgdesc='Offline desktop player for H5P packages'
 arch=('x86_64')
 url='https://github.com/tomhense/h5p-gui'
-license=('custom')
+license=('GPL-2.0')
 depends=('webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator')
 makedepends=('git' 'nodejs' 'npm' 'rust')
 source=("git+$url.git")
@@ -12,13 +12,7 @@ sha256sums=('SKIP')
 
 pkgver() {
   cd "$srcdir/h5p-gui"
-  local version
-  version=$(git describe --long --tags --match 'v*' 2>/dev/null || true)
-  if [[ -n "$version" ]]; then
-    printf '%s\n' "$version" | sed -E 's/^v//; s/([^-]+)-([0-9]+)-g.*/\1.r\2/'
-  else
-    printf '0.1.0.r%s\n' "$(git rev-list --count HEAD)"
-  fi
+  git describe --long --tags --abbrev=7 | sed 's/\([^-]*-g\)/r\1/;s/-/./g;s/^v//'
 }
 
 build() {
