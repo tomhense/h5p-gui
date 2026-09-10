@@ -4,6 +4,6 @@
   "version": "0.1.0",
   "identifier": "dev.h5p.desk",
   "build": { "beforeDevCommand": "npm run dev", "beforeBuildCommand": "npm run build", "devUrl": "http://localhost:1420", "frontendDist": "../dist" },
-  "app": { "windows": [{ "title": "H5P Desk", "width": 1100, "height": 760, "minWidth": 720, "minHeight": 600, "resizable": true }], "security": { "csp": null, "assetProtocol": { "enable": true, "scope": ["$HOME/**"] } } },
+  "app": { "windows": [{ "title": "H5P Desk", "width": 1100, "height": 760, "minWidth": 720, "minHeight": 600, "resizable": true, "decorations": false }], "security": { "csp": null, "assetProtocol": { "enable": true, "scope": ["$HOME/**"] } } },
   "bundle": { "active": true, "targets": ["deb", "rpm"], "icon": ["icons/icon.png"] }
 }
