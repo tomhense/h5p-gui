@@ -1,0 +1,21 @@
+{
+  "name": "h5p-gui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "dependencies": {
+    "h5p-standalone": "^3.8.2",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.8.4",
+    "vite": "^7.1.7"
+  }
+}

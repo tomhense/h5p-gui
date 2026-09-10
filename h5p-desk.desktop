@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=H5P Desk
+Comment=Open H5P learning packages offline
+Exec=h5p-desk %F
+Icon=h5p-desk
+Terminal=false
+Type=Application
+Categories=Education;Utility;
+MimeType=application/x-h5p;application/zip;
